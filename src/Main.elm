@@ -13,28 +13,33 @@ main =
         }
 
 
+rawJson =
+    -- """6"""
+    """"hello\""""
+
+
 type alias Model =
-    { debugMessage : Maybe String
-    , json : String
-    , parsed : Result D.Error Int
+    { json : String
+
+    -- , parsed : Result D.Error Int
+    , parsed : Result D.Error String
     }
 
 
-decode : String -> Result D.Error Int
+
+-- """[6, 6, 6]"""
+-- decode : String -> Result D.Error Int
+-- decode json =
+--     D.decodeString D.int json
+
+
+decode : String -> Result D.Error String
 decode json =
-    D.decodeString D.int json
-
-
-rawJson =
-    """6"""
+    D.decodeString D.string json
 
 
 init =
-    { debugMessage = Nothing
-
-    -- , json = """[[null,null,"X"],[null,"O",null],[null,null,null]]"""
-    -- , json = """[1, 2, 3]"""
-    , json = rawJson
+    { json = rawJson
     , parsed = decode rawJson
     }
 
@@ -48,30 +53,24 @@ update msg model =
     model
 
 
-renderDebugMessage : Maybe String -> Html Msg
-renderDebugMessage debugMessage =
-    case debugMessage of
-        Nothing ->
-            div [] []
 
-        Just message ->
-            div [] [ text message ]
+-- renderParsed : Result D.Error Int -> Html Msg
 
 
-renderParsed : Result D.Error Int -> Html Msg
-renderParsed debugMessage =
-    case debugMessage of
+renderParsed : Result D.Error String -> Html Msg
+renderParsed result =
+    case result of
         Result.Err decodeError ->
-            div [] []
+            div [] [ text (D.errorToString decodeError) ]
 
-        Result.Ok int ->
-            div [] [ text (String.fromInt int) ]
+        Result.Ok value ->
+            -- div [] [ text (String.fromInt value) ]
+            div [] [ text value ]
 
 
 view : Model -> Html Msg
 view model =
     div []
-        [ renderDebugMessage model.debugMessage
-        , pre [] [ text model.json ]
+        [ pre [] [ text model.json ]
         , renderParsed model.parsed
         ]
