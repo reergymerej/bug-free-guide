@@ -16,7 +16,8 @@ main =
 rawJson =
     -- """6"""
     -- """"hello\""""
-    """null"""
+    -- """null"""
+    """[1,2,3]"""
 
 
 type alias Model =
@@ -24,7 +25,8 @@ type alias Model =
 
     -- , parsed : Result D.Error Int
     -- , parsed : Result D.Error String
-    , parsed : Result D.Error (Maybe String)
+    -- , parsed : Result D.Error (Maybe String)
+    , parsed : Result D.Error (List Int)
     }
 
 
@@ -38,11 +40,15 @@ type alias Model =
 -- decode json =
 --     D.decodeString D.string json
 -- """null"""
+-- decode : String -> Result D.Error (Maybe String)
+-- decode json =
+--     D.decodeString (D.nullable D.string) json
+-- """[1,2,3]"""
 
 
-decode : String -> Result D.Error (Maybe String)
+decode : String -> Result D.Error (List Int)
 decode json =
-    D.decodeString (D.nullable D.string) json
+    D.decodeString (D.list D.int) json
 
 
 init =
@@ -60,27 +66,22 @@ update msg model =
     model
 
 
-
--- """6"""
--- renderParsed : Result D.Error Int -> Html Msg
--- """"hello\""""
--- renderParsed : Result D.Error String -> Html Msg
+renderItem : Int -> Html Msg
+renderItem int =
+    div [] [ text (String.fromInt int) ]
 
 
-renderParsed : Result D.Error (Maybe String) -> Html Msg
+renderParsed : Result D.Error (List Int) -> Html Msg
 renderParsed result =
     case result of
         Result.Err decodeError ->
             div [] [ text (D.errorToString decodeError) ]
 
         Result.Ok value ->
-            -- div [] [ text (String.fromInt value) ]
-            case value of
-                Nothing ->
-                    div [] [ text "it was null" ]
-
-                Just str ->
-                    div [] [ text str ]
+            div []
+                [ div [] [ text (String.fromInt (List.length value)) ]
+                , div [] (List.map renderItem value)
+                ]
 
 
 view : Model -> Html Msg
