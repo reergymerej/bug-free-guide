@@ -14,41 +14,26 @@ main =
 
 
 rawJson =
-    -- """6"""
-    -- """"hello\""""
-    -- """null"""
-    """[1,2,3]"""
+    """[1,null,3]"""
+
+
+nullableInt : D.Decoder Int
+nullableInt =
+    D.oneOf
+        [ D.int
+        , D.null 0
+        ]
 
 
 type alias Model =
     { json : String
-
-    -- , parsed : Result D.Error Int
-    -- , parsed : Result D.Error String
-    -- , parsed : Result D.Error (Maybe String)
     , parsed : Result D.Error (List Int)
     }
 
 
-
--- """6"""
--- decode : String -> Result D.Error Int
--- decode json =
---     D.decodeString D.int json
--- """"hello\""""
--- decode : String -> Result D.Error String
--- decode json =
---     D.decodeString D.string json
--- """null"""
--- decode : String -> Result D.Error (Maybe String)
--- decode json =
---     D.decodeString (D.nullable D.string) json
--- """[1,2,3]"""
-
-
 decode : String -> Result D.Error (List Int)
 decode json =
-    D.decodeString (D.list D.int) json
+    D.decodeString (D.list nullableInt) json
 
 
 init =
