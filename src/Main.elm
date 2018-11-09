@@ -14,7 +14,7 @@ main =
 
 
 rawJson =
-    """[1,null,3]"""
+    """{ "name": "Bender", "ints": [1,null,3] }"""
 
 
 nullableInt : D.Decoder Int
@@ -25,15 +25,42 @@ nullableInt =
         ]
 
 
-type alias Model =
-    { json : String
-    , parsed : Result D.Error (List Int)
+type alias ListOfInts =
+    List Int
+
+
+type alias Robot =
+    { ints : ListOfInts
+    , name : String
     }
 
 
-decode : String -> Result D.Error (List Int)
+nameDecoder : D.Decoder String
+nameDecoder =
+    D.field "name" D.string
+
+
+listOfIntsDecoder : D.Decoder ListOfInts
+listOfIntsDecoder =
+    D.field "ints" (D.list nullableInt)
+
+
+type alias Model =
+    { json : String
+    , parsed : Result D.Error Robot
+    }
+
+
+robotDecoder : D.Decoder Robot
+robotDecoder =
+    D.map2 Robot
+        listOfIntsDecoder
+        nameDecoder
+
+
+decode : String -> Result D.Error Robot
 decode json =
-    D.decodeString (D.list nullableInt) json
+    D.decodeString robotDecoder json
 
 
 init =
@@ -53,19 +80,19 @@ update msg model =
 
 renderItem : Int -> Html Msg
 renderItem int =
-    div [] [ text (String.fromInt int) ]
+    li [] [ text (String.fromInt int) ]
 
 
-renderParsed : Result D.Error (List Int) -> Html Msg
+renderParsed : Result D.Error Robot -> Html Msg
 renderParsed result =
     case result of
         Result.Err decodeError ->
             div [] [ text (D.errorToString decodeError) ]
 
-        Result.Ok value ->
+        Result.Ok robot ->
             div []
-                [ div [] [ text (String.fromInt (List.length value)) ]
-                , div [] (List.map renderItem value)
+                [ div [] [ text ("name: " ++ robot.name) ]
+                , ul [] (List.map renderItem robot.ints)
                 ]
 
 
