@@ -27,7 +27,7 @@ main =
 
 rawJson =
     -- """{ "name": "Bender", "ints": [1,null,3] }"""
-    """[null, "X", null]"""
+    """[[null,null,null],[null,"X",null],[null,"O","X"]]"""
 
 
 nullableInt : D.Decoder Int
@@ -50,6 +50,10 @@ type alias Row =
     ListOfStrings
 
 
+type alias Board =
+    List Row
+
+
 type alias Robot =
     { ints : ListOfInts
     , name : String
@@ -68,7 +72,7 @@ listOfIntsDecoder =
 
 type alias Model =
     { json : String
-    , parsed : Result D.Error Row
+    , parsed : Result D.Error Board
     }
 
 
@@ -92,6 +96,11 @@ rowDecoder =
     D.list nullableString
 
 
+boardDecoder : D.Decoder Board
+boardDecoder =
+    D.list rowDecoder
+
+
 decode : String -> Result D.Error Robot
 decode json =
     D.decodeString robotDecoder json
@@ -102,9 +111,14 @@ decodeRowFromJson json =
     D.decodeString rowDecoder json
 
 
+decodeBoardFromJson : String -> Result D.Error Board
+decodeBoardFromJson json =
+    D.decodeString boardDecoder json
+
+
 init =
     { json = rawJson
-    , parsed = decodeRowFromJson rawJson
+    , parsed = decodeBoardFromJson rawJson
     }
 
 
@@ -115,16 +129,6 @@ type Msg
 update : Msg -> Model -> Model
 update msg model =
     model
-
-
-renderInt : Int -> Html Msg
-renderInt int =
-    li [] [ text (String.fromInt int) ]
-
-
-renderString : String -> Html Msg
-renderString str =
-    li [] [ text str ]
 
 
 renderDecodeError : D.Error -> Html Msg
@@ -145,19 +149,42 @@ renderParsedRobot result =
                 ]
 
 
-renderParsedRow : Result D.Error Row -> Html Msg
-renderParsedRow result =
+renderCell : String -> Html Msg
+renderCell str =
+    case str of
+        "X" ->
+            span [] [ text "X" ]
+
+        "O" ->
+            span [] [ text "O" ]
+
+        _ ->
+            span [] [ text "_" ]
+
+
+renderRow : Row -> Html Msg
+renderRow row =
+    div [] (List.map renderCell row)
+
+
+renderBoard : List Row -> Html Msg
+renderBoard rowList =
+    div [] (List.map renderRow rowList)
+
+
+renderParsedBoard : Result D.Error Board -> Html Msg
+renderParsedBoard result =
     case result of
         Result.Err decodeError ->
             renderDecodeError decodeError
 
-        Result.Ok row ->
-            ul [] (List.map renderString row)
+        Result.Ok board ->
+            renderBoard board
 
 
 view : Model -> Html Msg
 view model =
     div []
         [ pre [] [ text model.json ]
-        , renderParsedRow model.parsed
+        , renderParsedBoard model.parsed
         ]
