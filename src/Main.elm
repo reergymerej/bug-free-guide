@@ -5,6 +5,18 @@ import Html exposing (..)
 import Json.Decode as D
 
 
+{-
+   "{"type":"update-game","board":[[null,null,null],[null,"X",null],[null,"O","X"]],"yourTurn":true,"you":"O"}"
+
+   Row : List String
+
+   Board : List Row
+
+   message : { type: String , board: Board }
+
+-}
+
+
 main =
     Browser.sandbox
         { init = init
@@ -14,7 +26,8 @@ main =
 
 
 rawJson =
-    """{ "name": "Bender", "ints": [1,null,3] }"""
+    -- """{ "name": "Bender", "ints": [1,null,3] }"""
+    """[null, "X", null]"""
 
 
 nullableInt : D.Decoder Int
@@ -27,6 +40,14 @@ nullableInt =
 
 type alias ListOfInts =
     List Int
+
+
+type alias ListOfStrings =
+    List String
+
+
+type alias Row =
+    ListOfStrings
 
 
 type alias Robot =
@@ -47,7 +68,7 @@ listOfIntsDecoder =
 
 type alias Model =
     { json : String
-    , parsed : Result D.Error Robot
+    , parsed : Result D.Error Row
     }
 
 
@@ -58,14 +79,32 @@ robotDecoder =
         nameDecoder
 
 
+nullableString : D.Decoder String
+nullableString =
+    D.oneOf
+        [ D.string
+        , D.null "?"
+        ]
+
+
+rowDecoder : D.Decoder Row
+rowDecoder =
+    D.list nullableString
+
+
 decode : String -> Result D.Error Robot
 decode json =
     D.decodeString robotDecoder json
 
 
+decodeRowFromJson : String -> Result D.Error Row
+decodeRowFromJson json =
+    D.decodeString rowDecoder json
+
+
 init =
     { json = rawJson
-    , parsed = decode rawJson
+    , parsed = decodeRowFromJson rawJson
     }
 
 
@@ -78,27 +117,47 @@ update msg model =
     model
 
 
-renderItem : Int -> Html Msg
-renderItem int =
+renderInt : Int -> Html Msg
+renderInt int =
     li [] [ text (String.fromInt int) ]
 
 
-renderParsed : Result D.Error Robot -> Html Msg
-renderParsed result =
+renderString : String -> Html Msg
+renderString str =
+    li [] [ text str ]
+
+
+renderDecodeError : D.Error -> Html Msg
+renderDecodeError decodeError =
+    div [] [ text (D.errorToString decodeError) ]
+
+
+renderParsedRobot : Result D.Error Robot -> Html Msg
+renderParsedRobot result =
     case result of
         Result.Err decodeError ->
-            div [] [ text (D.errorToString decodeError) ]
+            renderDecodeError decodeError
 
         Result.Ok robot ->
             div []
                 [ div [] [ text ("name: " ++ robot.name) ]
-                , ul [] (List.map renderItem robot.ints)
+                , ul [] (List.map renderInt robot.ints)
                 ]
+
+
+renderParsedRow : Result D.Error Row -> Html Msg
+renderParsedRow result =
+    case result of
+        Result.Err decodeError ->
+            renderDecodeError decodeError
+
+        Result.Ok row ->
+            ul [] (List.map renderString row)
 
 
 view : Model -> Html Msg
 view model =
     div []
         [ pre [] [ text model.json ]
-        , renderParsed model.parsed
+        , renderParsedRow model.parsed
         ]
